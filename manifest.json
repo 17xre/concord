@@ -1,0 +1,20 @@
+{
+  "name": "Concord Travel Quotation System",
+  "short_name": "Concord Travel",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#002060",
+  "icons": [
+    {
+      "src": "./app-icon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "./app-icon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

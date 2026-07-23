@@ -1,0 +1,1127 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Concord Travel - All Services Quotation System</title>
+    
+    <!-- إعدادات الـ PWA والشكل الخارجي وأيقونة الدخول -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#00205b">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="app-icon.png">
+
+    <!-- مكتبات الأيقونات والـ PDF والخطوط -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Montserrat:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --navy: #00205b;
+            --red: #d9232a;
+            --bg: #f4f7fa;
+            --card-bg: #ffffff;
+            --text-color: #333333;
+            --border-color: #ccc;
+            --input-bg: #ffffff;
+            --sec-header-bg: #eef3f8;
+        }
+
+        body.dark-mode {
+            --bg: #121212;
+            --card-bg: #1e1e1e;
+            --text-color: #e0e0e0;
+            --border-color: #444444;
+            --input-bg: #2d2d2d;
+            --sec-header-bg: #2a3a4e;
+        }
+
+        * { box-sizing: border-box; }
+        
+        body { 
+            margin: 0; 
+            padding: 10px; 
+            background-color: var(--bg); 
+            display: flex; 
+            flex-direction: column; 
+            gap: 15px; 
+            min-height: 100vh; 
+            transition: background-color 0.3s; 
+            font-family: 'Cairo', 'Montserrat', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body.rtl { direction: rtl; text-align: right; unicode-bidi: isolate; font-family: 'Cairo', 'Segoe UI', Tahoma, sans-serif; }
+        body.ltr { direction: ltr; text-align: left; font-family: 'Montserrat', 'Segoe UI', Tahoma, sans-serif; }
+
+        @media (min-width: 1024px) {
+            body { flex-direction: row; padding: 15px; }
+            .form-section { width: 35%; height: calc(100vh - 30px); position: sticky; top: 15px; }
+            .preview-section { width: 65%; }
+        }
+
+        /* لوحة التحكم الجانبية */
+        .form-section { 
+            width: 100%; 
+            background: var(--card-bg); 
+            color: var(--text-color); 
+            padding: 15px; 
+            border-radius: 10px; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15); 
+            overflow-y: auto; 
+        }
+        
+        .lang-bar { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border-color); padding-bottom: 8px; margin-bottom: 12px; flex-wrap: wrap; gap: 10px; }
+        .mode-toggle-btn { background: var(--navy); color: white; border: none; padding: 5px 10px; border-radius: 20px; cursor: pointer; font-size: 11px; display: flex; align-items: center; gap: 5px; }
+
+        .service-tabs { display: flex; gap: 5px; margin-bottom: 12px; flex-wrap: wrap; }
+        .tab-btn { flex: 1; min-width: 75px; padding: 8px 4px; border: 2px solid var(--navy); background: transparent; color: var(--navy); font-weight: bold; border-radius: 6px; cursor: pointer; text-align: center; font-size: 11px; display: flex; align-items: center; justify-content: center; gap: 4px; }
+        .tab-btn.active { background: var(--navy); color: white; }
+
+        .form-group { margin-bottom: 10px; }
+        .form-group label { display: block; font-size: 11px; font-weight: bold; color: var(--text-color); margin-bottom: 3px; }
+        .form-group input, .form-group select, .form-group textarea { 
+            width: 100%; padding: 7px 9px; border: 1px solid var(--border-color); border-radius: 5px; font-size: 12px; background-color: var(--input-bg); color: var(--text-color); 
+        }
+
+        .form-row { display: flex; gap: 8px; }
+        .form-row .form-group { flex: 1; }
+
+        .section-header-form { background: var(--sec-header-bg); color: var(--navy); padding: 7px 10px; font-size: 11.5px; font-weight: bold; border-radius: 4px; margin: 12px 0 8px 0; }
+        body.rtl .section-header-form { border-right: 4px solid var(--navy); }
+        body.ltr .section-header-form { border-left: 4px solid var(--navy); }
+
+        .btn-submit { width: 100%; padding: 10px; background: var(--navy); color: white; border: none; font-weight: bold; border-radius: 5px; cursor: pointer; margin-top: 12px; font-size: 13px; }
+
+        /* شاشة المعاينة للـ PDF */
+        .preview-section { width: 100%; display: flex; justify-content: center; }
+        
+        .quotation-card { 
+            width: 100%;
+            max-width: 210mm;
+            background: #ffffff !important; 
+            color: #333333 !important;
+            padding: 0;
+            border-radius: 6px; 
+            box-shadow: 0 5px 25px rgba(0,0,0,0.2); 
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .quotation-body-content {
+            padding: 0 15px;
+            flex: 1;
+        }
+
+        body.rtl .quotation-card { direction: rtl !important; text-align: right !important; }
+        body.ltr .quotation-card { direction: ltr !important; text-align: left !important; }
+
+        .header-image-container {
+            width: 100%;
+            background: #ffffff;
+            margin-bottom: 10px;
+            overflow: hidden;
+            text-align: center;
+        }
+        .header-img-exact {
+            width: 100%;
+            height: auto;
+            display: block;
+            margin: 0;
+        }
+
+        .sec-title { background: #00205b; color: white; padding: 5px 10px; font-size: 11px; font-weight: bold; border-radius: 4px 4px 0 0; margin-top: 8px; display: flex; align-items: center; gap: 8px; }
+        
+        .details-grid { border: 1px solid #c8d6e5; border-radius: 0 0 6px 6px; padding: 8px 10px; font-size: 11px; display: grid; grid-template-columns: 1fr 1fr; gap: 6px 10px; background: #fafbfc; }
+        body.rtl .details-grid { direction: rtl !important; text-align: right !important; }
+        body.ltr .details-grid { direction: ltr !important; text-align: left !important; }
+
+        .grid-item { display: flex; align-items: center; gap: 6px; }
+        .grid-item strong { unicode-bidi: isolate; display: inline-block; }
+        body.rtl .fa-plane-departure, body.rtl .fa-plane-arrival, body.rtl .fa-plane { transform: scaleX(-1); display: inline-block; }
+        .grid-item i { color: #00205b; width: 16px; text-align: center; }
+
+        @media print {
+            @page { size: A4 portrait; margin: 6mm; }
+            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
+            body { display: block !important; padding: 0 !important; background: #fff !important; }
+            .form-section, .btn-submit { display: none !important; }
+            .preview-section { width: 100% !important; display: block !important; }
+            .quotation-card { box-shadow: none !important; max-width: 100% !important; width: 100% !important; }
+            .quotation-body-content { padding: 0 4px !important; }
+            .details-grid, .data-table, .price-summary-box, .box-info-two { width: 100% !important; max-width: 100% !important; }
+            .header-image-container { height: auto !important; }
+            .header-img-exact { height: auto !important; }
+        }
+
+        .data-table { width: 100%; border-collapse: collapse; border: 1px solid #ddd; margin-top: 6px; font-size: 11px; }
+        .data-table th { background: #00205b; color: white; padding: 6px 8px; font-size: 10.5px; }
+        
+        body.rtl .data-table th, body.rtl .data-table td { text-align: right; }
+        body.ltr .data-table th, body.ltr .data-table td { text-align: left; }
+        
+        .data-table tr { border-bottom: 1px solid #eee; }
+        .data-table td { padding: 6px 8px; vertical-align: middle; }
+
+        .price-summary-box { border: 1px solid #ddd; border-radius: 6px; padding: 6px 10px; margin-top: 6px; background: #fafafa; }
+        .price-row { display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 2px; }
+        .price-row.final { border-top: 2px solid #00205b; padding-top: 4px; margin-top: 4px; font-size: 12px; font-weight: bold; color: #d9232a; }
+
+        .box-info-two { display: flex; gap: 8px; margin-top: 6px; font-size: 9px; }
+        .box-info-item { flex: 1; border: 1px solid #ccc; border-radius: 5px; padding: 5px 8px; background: #fdfdfd; }
+        .custom-payment-text { white-space: pre-line; line-height: 1.2; color: #333; font-size: 9px; margin-top: 2px; }
+        body.rtl .custom-payment-text { direction: ltr; text-align: left; }
+        body.ltr .custom-payment-text { direction: ltr; text-align: left; }
+
+        .bank-details-box { border: 1px solid #ddd; border-radius: 5px; padding: 5px 10px; margin-top: 5px; display: flex; align-items: center; gap: 8px; font-size: 9px; background: #fafbfc; }
+
+        .footer-image-container {
+            width: 100%;
+            background: #ffffff;
+            border-top: 1px solid #dcdcdc;
+            margin-top: 10px;
+            overflow: hidden;
+            text-align: center;
+        }
+        .footer-img-exact {
+            width: 100%;
+            max-height: 120px;
+            object-fit: contain;
+            display: block;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+<body class="rtl">
+
+    <!-- 1. لوحة الإدخال الجانبية -->
+    <div class="form-section">
+        <div class="lang-bar">
+            <h3 style="margin: 0;" id="uiTitle">التحكم بالنظام</h3>
+            <div style="display: flex; gap: 8px; align-items: center;">
+                <button class="mode-toggle-btn" onclick="toggleDarkMode()">
+                    <i class="fa-solid fa-moon" id="darkModeIcon"></i> <span id="darkModeLabel">Dark</span>
+                </button>
+                <div>
+                    <button onclick="setLanguage('ar')" style="cursor:pointer; padding: 3px 7px; font-weight: bold;">عربي</button>
+                    <button onclick="setLanguage('en')" style="cursor:pointer; padding: 3px 7px;">EN</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="service-tabs">
+            <button class="tab-btn active" id="tabHotelBtn" onclick="switchTab('hotel')"><i class="fa-solid fa-hotel"></i> <span data-tr="hotelsTab">الفنادق</span></button>
+            <button class="tab-btn" id="tabTripBtn" onclick="switchTab('trip')"><i class="fa-solid fa-umbrella-beach"></i> <span data-tr="tripsTab">الرحلات</span></button>
+            <button class="tab-btn" id="tabFlightBtn" onclick="switchTab('flight')"><i class="fa-solid fa-plane"></i> <span data-tr="flightsTab">الطيران</span></button>
+        </div>
+
+        <!-- تبويب الفنادق -->
+        <div id="formHotelFields">
+            <div class="section-header-form"><i class="fa-solid fa-hotel"></i> <span data-tr="hotelDataTitle">بيانات الفندق والعميل</span></div>
+            <div class="form-row">
+                <div class="form-group"><label data-tr="docDateLbl">تاريخ العرض</label><input type="date" id="inHotelDocDate" onchange="calculateAndRender()"></div>
+                <div class="form-group">
+                    <label data-tr="currLbl">العملة</label>
+                    <select id="inHotelCurrency" onchange="calculateAndRender()">
+                        <option value="EUR">EUR (يورو)</option>
+                        <option value="USD">USD (دولار)</option>
+                        <option value="EGP">EGP (جنيه مصري)</option>
+                        <option value="SAR">SAR (ريال)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label data-tr="docNoLbl">رقم العرض</label><input type="text" id="inHotelDocNo" oninput="calculateAndRender()"></div>
+                <div class="form-group"><label data-tr="hotelNameLbl">اسم الفندق</label><input type="text" id="inHotelName" placeholder="" oninput="calculateAndRender()"></div>
+            </div>
+            <!-- حقل عنوان الفندق / المحافظة -->
+            <div class="form-group">
+                <label data-tr="hotelAddressLbl">عنوان الفندق (المحافظة / المدينة)</label>
+                <input type="text" id="inHotelAddress" placeholder="" oninput="calculateAndRender()">
+            </div>
+            <div class="form-group"><label data-tr="clientLbl">اسم العميل / الشركة</label><input type="text" id="inHotelBillTo" placeholder="" oninput="onClientNameChange('hotel')"></div>
+
+            <div class="section-header-form"><i class="fa-solid fa-calendar-days"></i> <span data-tr="roomDataTitle">الإقامة والغرف</span></div>
+            <div class="form-row">
+                <div class="form-group"><label data-tr="checkInLbl">تاريخ الوصول</label><input type="date" id="inCheckIn" onchange="calculateAndRender()"></div>
+                <div class="form-group"><label data-tr="checkOutLbl">تاريخ المغادرة</label><input type="date" id="inCheckOut" onchange="calculateAndRender()"></div>
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label data-tr="roomTypeLbl">نوع الغرفة</label><input type="text" id="inRoomType" placeholder="" oninput="calculateAndRender()"></div>
+                <div class="form-group"><label data-tr="boardTypeLbl">نوع الوجبات</label><input type="text" id="inBoardType" placeholder="" oninput="calculateAndRender()"></div>
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label data-tr="roomsQtyLbl">عدد الغرف</label><input type="number" id="inRoomQty" value="1" min="1" oninput="calculateAndRender()"></div>
+                <div class="form-group"><label data-tr="roomPriceLbl">سعر الغرفة في الليلة</label><input type="number" id="inRoomPrice" placeholder="0" oninput="calculateAndRender()"></div>
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label data-tr="discLbl">نسبة الخصم (%)</label><input type="number" id="inHotelDiscount" value="0" min="0" max="100" step="0.5" oninput="calculateAndRender()"></div>
+            </div>
+        </div>
+
+        <!-- تبويب الرحلات السياحية -->
+        <div id="formTripFields" style="display: none;">
+            <div class="section-header-form"><i class="fa-solid fa-umbrella-beach"></i> <span data-tr="tripDataTitle">بيانات الرحلة والعميل</span></div>
+            <div class="form-row">
+                <div class="form-group"><label data-tr="docDateLbl">تاريخ العرض</label><input type="date" id="inTripDocDate" onchange="calculateAndRender()"></div>
+                <div class="form-group">
+                    <label data-tr="currLbl">العملة</label>
+                    <select id="inTripCurrency" onchange="calculateAndRender()">
+                        <option value="EUR">EUR (يورو)</option>
+                        <option value="USD">USD (دولار)</option>
+                        <option value="EGP">EGP (جنيه مصري)</option>
+                        <option value="SAR">SAR (ريال)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label data-tr="docNoLbl">رقم العرض</label><input type="text" id="inTripDocNo" oninput="calculateAndRender()"></div>
+                <div class="form-group"><label data-tr="tripNameLbl">الخدمة الإضافية</label><input type="text" id="inTripName" placeholder="" oninput="calculateAndRender()"></div>
+            </div>
+            <div class="form-group"><label data-tr="clientLbl">اسم العميل / الشركة</label><input type="text" id="inTripBillTo" placeholder="" oninput="onClientNameChange('trip')"></div>
+
+            <div class="section-header-form"><i class="fa-solid fa-clock"></i> <span data-tr="tripProgTitle">التوقيت والبرنامج</span></div>
+            <div class="form-group"><label data-tr="tripStartLbl">البند</label><input type="text" id="inTripStartDate" placeholder="" oninput="calculateAndRender()"></div>
+            <div class="form-group"><label data-tr="durationLbl">وصف البند</label><textarea id="inTripDuration" rows="3" placeholder="" oninput="calculateAndRender()"></textarea></div>
+            <div class="form-group"><label data-tr="tripDirectionLbl">الاتجاه</label><input type="text" id="inTripDirection" placeholder="" oninput="calculateAndRender()"></div>
+            <div class="form-row">
+                <div class="form-group"><label data-tr="tripFromDateLbl">تاريخ البداية</label><input type="date" id="inTripFromDate" onchange="calculateAndRender()"></div>
+                <div class="form-group"><label data-tr="tripToDateLbl">تاريخ النهاية</label><input type="date" id="inTripToDate" onchange="calculateAndRender()"></div>
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label data-tr="paxCountLbl">العدد</label><input type="number" id="inTripPax" value="1" min="1" oninput="calculateAndRender()"></div>
+                <div class="form-group"><label data-tr="paxPriceLbl">السعر</label><input type="number" id="inTripPaxPrice" placeholder="0" oninput="calculateAndRender()"></div>
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label data-tr="discLbl">نسبة الخصم (%)</label><input type="number" id="inTripDiscount" value="0" min="0" max="100" step="0.5" oninput="calculateAndRender()"></div>
+            </div>
+        </div>
+
+        <!-- تبويب الطيران -->
+        <div id="formFlightFields" style="display: none;">
+            <div class="section-header-form"><i class="fa-solid fa-plane"></i> <span data-tr="flightDataTitle">بيانات تذكرة الطيران</span></div>
+            <div class="form-row">
+                <div class="form-group"><label data-tr="invDateLbl">تاريخ الفاتورة</label><input type="date" id="inFlightDocDate" onchange="calculateAndRender()"></div>
+                <div class="form-group">
+                    <label data-tr="currLbl">العملة</label>
+                    <select id="inFlightCurrency" onchange="calculateAndRender()">
+                        <option value="EUR">EUR (يورو)</option>
+                        <option value="USD">USD (دولار)</option>
+                        <option value="EGP">EGP (جنيه مصري)</option>
+                        <option value="SAR">SAR (ريال)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label data-tr="invNoLbl">رقم الفاتورة</label><input type="text" id="inFlightDocNo" oninput="calculateAndRender()"></div>
+                <div class="form-group"><label data-tr="airlineLbl">خط الطيران</label><input type="text" id="inAirline" placeholder="" oninput="calculateAndRender()"></div>
+            </div>
+            <div class="form-group"><label data-tr="clientLbl">اسم العميل / الشركة</label><input type="text" id="inFlightBillTo" placeholder="" oninput="onClientNameChange('flight')"></div>
+
+            <div class="section-header-form"><i class="fa-solid fa-plane-departure"></i> <span data-tr="flightRouteTitle">تفاصيل الإقلاع والوصول</span></div>
+            <div style="background: rgba(0,32,91,0.03); padding: 8px; border-radius: 5px; margin-bottom: 8px;">
+                <label style="color: var(--navy); font-weight: bold; font-size: 11px;" data-tr="depDetailsLbl">تفاصيل الإقلاع 🛫</label>
+                <div class="form-group" style="margin-top: 4px;"><input type="text" id="inDepAirport" placeholder="" oninput="calculateAndRender()"></div>
+                <div class="form-row">
+                    <div class="form-group"><label data-tr="depDateLbl">تاريخ الإقلاع</label><input type="date" id="inDepDate" onchange="calculateAndRender()"></div>
+                    <div class="form-group"><label data-tr="depTimeLbl">ساعة الإقلاع</label><input type="time" id="inDepTime" value="00:00" onchange="calculateAndRender()"></div>
+                </div>
+            </div>
+            <div style="background: rgba(217,35,42,0.03); padding: 8px; border-radius: 5px; margin-bottom: 8px;">
+                <label style="color: var(--red); font-weight: bold; font-size: 11px;" data-tr="arrDetailsLbl">تفاصيل الوصول 🛬</label>
+                <div class="form-group" style="margin-top: 4px;"><input type="text" id="inArrAirport" placeholder="" oninput="calculateAndRender()"></div>
+                <div class="form-row">
+                    <div class="form-group"><label data-tr="arrDateLbl">تاريخ الوصول</label><input type="date" id="inArrDate" onchange="calculateAndRender()"></div>
+                    <div class="form-group"><label data-tr="arrTimeLbl">ساعة الوصول</label><input type="time" id="inArrTime" value="00:00" onchange="calculateAndRender()"></div>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label data-tr="classLbl">درجة التذكرة</label>
+                    <select id="inFlightClass" onchange="calculateAndRender()">
+                        <option value="Economy Class">Economy Class</option>
+                        <option value="Business Class">Business Class</option>
+                        <option value="First Class">First Class</option>
+                    </select>
+                </div>
+                <div class="form-group"><label data-tr="pnrLbl">رمز الحجز (PNR)</label><input type="text" id="inPnr" placeholder="" oninput="calculateAndRender()"></div>
+            </div>
+
+            <div class="section-header-form"><i class="fa-solid fa-users"></i> <span data-tr="paxPricingTitle">المسافرين والأسعار</span></div>
+            <div class="form-row">
+                <div class="form-group"><label data-tr="adultsLbl">بالغين</label><input type="number" id="inAdults" value="1" min="1" oninput="calculateAndRender()"></div>
+                <div class="form-group"><label data-tr="childrenLbl">أطفال</label><input type="number" id="inChildren" value="0" min="0" oninput="calculateAndRender()"></div>
+                <div class="form-group"><label data-tr="infantsLbl">رُضّع</label><input type="number" id="inInfants" value="0" min="0" oninput="calculateAndRender()"></div>
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label data-tr="ticketPriceLbl">سعر التذكرة للفرد</label><input type="number" id="inTicketUnitPrice" placeholder="0" oninput="calculateAndRender()"></div>
+                <div class="form-group"><label data-tr="serviceFeeLbl">رسوم إضافية</label><input type="number" id="inFlightServiceFee" value="0" oninput="calculateAndRender()"></div>
+                <div class="form-group"><label data-tr="discLbl">نسبة الخصم (%)</label><input type="number" id="inFlightDiscount" value="0" min="0" max="100" step="0.5" oninput="calculateAndRender()"></div>
+            </div>
+        </div>
+
+        <!-- الشروط والدفع -->
+        <div id="commonCustomBox">
+            <div class="section-header-form"><i class="fa-solid fa-credit-card"></i> <span data-tr="paymentCondTitle">طريقة وشروط الدفع</span></div>
+            <div class="form-group">
+                <label data-tr="payMethodLbl">طريقة الدفع</label>
+                <select id="inPaymentMethod" onchange="calculateAndRender()">
+                    <option value="bank">تحويل بنكي (Bank Transfer)</option>
+                    <option value="instapay">إنستا باي (InstaPay)</option>
+                    <option value="vodafone">فودافون كاش (Vodafone Cash)</option>
+                    <option value="card">بطاقة إئتمان / فيزا (Credit Card)</option>
+                    <option value="cash">نقداً بالمكتب (Cash at Office)</option>
+                </select>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label data-tr="ibanLbl">رقم الحساب / IBAN</label>
+                    <input type="text" id="inBankAccountNo" placeholder="" oninput="calculateAndRender()">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label data-tr="instaLbl">معرف إنستا باي (IPA)</label>
+                    <input type="text" id="inInstaPayHandle" placeholder="" oninput="calculateAndRender()">
+                </div>
+                <div class="form-group">
+                    <label data-tr="vodaLbl">رقم فودافون كاش</label>
+                    <input type="text" id="inVodafoneCashNo" placeholder="" oninput="calculateAndRender()">
+                </div>
+            </div>
+            <div class="form-group">
+                <label data-tr="termsLbl">الشروط والأحكام</label>
+                <textarea id="inCustomPayment" rows="3" oninput="calculateAndRender()">.Full payment is required 48 hours prior to confirmation •
+.Non-refundable after final booking issuance •</textarea>
+            </div>
+            <div class="form-group">
+                <label data-tr="notesLbl">ملاحظات إضافية</label>
+                <textarea id="inCustomNotes" rows="3" oninput="calculateAndRender()">.Please verify all passport details before issuing •
+.Offer valid for 48 hours from quotation date •</textarea>
+            </div>
+        </div>
+
+        <button class="btn-submit" onclick="downloadPDF()" data-tr="downloadBtn">تحميل الملف PDF 📄</button>
+    </div>
+
+    <!-- 2. المعاينة الحية للـ PDF -->
+    <div class="preview-section">
+        <div class="quotation-card" id="pdf-container">
+            <div>
+                <!-- ================= الهيدر العلوي ================= -->
+                <div class="header-image-container">
+                    <img src="header-banner.jpeg" class="header-img-exact" alt="Concord Travel Header Banner">
+                </div>
+
+                <div class="quotation-body-content">
+                    <!-- شريط معلومات الفاتورة -->
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; padding: 4px 8px; background: #f8fafd; border-radius: 4px; border: 1px solid #e1e8ed; font-size: 9.5px;">
+                        <div style="display: flex; align-items: center; gap: 4px;">
+                            <span style="font-weight: bold; color: #00205b; unicode-bidi: isolate; display: inline-block;" data-tr="outInvNoLbl">رقم الفاتورة:</span> 
+                            <span id="outDocNo" style="background: #d9232a; color: white; padding: 1px 5px; border-radius: 3px; font-weight: bold; direction: ltr; unicode-bidi: embed; display: inline-block;">-</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 4px;">
+                            <span style="font-weight: bold; color: #00205b; unicode-bidi: isolate; display: inline-block;" data-tr="outInvDateLbl">التاريخ:</span> 
+                            <span id="outDocDate" style="direction: ltr; unicode-bidi: embed; display: inline-block;">-</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 4px;">
+                            <span style="font-weight: bold; color: #00205b; unicode-bidi: isolate; display: inline-block;" data-tr="outCurrLbl">العملة:</span> 
+                            <span id="outCurrLabel" style="direction: ltr; unicode-bidi: embed; display: inline-block;">EURO (EUR)</span>
+                        </div>
+                    </div>
+
+                    <!-- Bill To -->
+                    <div style="margin-bottom: 6px; background: #f8fafd; padding: 5px 8px; border-radius: 4px; border-right: 3px solid #00205b;">
+                        <div style="font-size: 8px; font-weight: bold; color: #666; text-transform: uppercase;" data-tr="outPreparedLbl">مجهز إلى / العميل:</div>
+                        <div id="outBillTo" style="font-size: 11px; font-weight: 900; color: #00205b; direction: ltr; text-align: right;">-</div>
+                    </div>
+
+                    <!-- معاينة الفنادق -->
+                    <div id="viewHotel">
+                        <div class="sec-title"><i class="fa-solid fa-hotel"></i> <span data-tr="outHotelSecTitle">تفاصيل حجز الفندق</span></div>
+                        <div class="details-grid">
+                            <div class="grid-item" style="grid-column: span 2;"><i class="fa-solid fa-building"></i> <strong><span data-tr="outHotelLbl">الفندق:</span></strong> <span id="outHotelName" style="direction: ltr; unicode-bidi: embed;">-</span></div>
+                            <!-- عرض عنوان الفندق في المعاينة -->
+                            <div class="grid-item" style="grid-column: span 2;"><i class="fa-solid fa-location-dot"></i> <strong><span data-tr="outHotelAddressLbl">العنوان (المحافظة):</span></strong> <span id="outHotelAddress" style="direction: ltr; unicode-bidi: embed;">-</span></div>
+                            <div class="grid-item"><i class="fa-solid fa-calendar-check"></i> <strong><span data-tr="outCheckInLbl">تاريخ الوصول:</span></strong> <span id="outCheckIn" style="direction: ltr; unicode-bidi: embed; display: inline-block;">-</span></div>
+                            <div class="grid-item"><i class="fa-solid fa-calendar-xmark"></i> <strong><span data-tr="outCheckOutLbl">تاريخ المغادرة:</span></strong> <span id="outCheckOut" style="direction: ltr; unicode-bidi: embed; display: inline-block;">-</span></div>
+                            <div class="grid-item"><i class="fa-solid fa-bed"></i> <strong><span data-tr="outRoomTypeLbl">نوع الغرفة:</span></strong> <span id="outRoomType" style="direction: ltr; unicode-bidi: embed;">-</span></div>
+                            <div class="grid-item"><i class="fa-solid fa-utensils"></i> <strong><span data-tr="outBoardLbl">الوجبات:</span></strong> <span id="outBoardType" style="direction: ltr; unicode-bidi: embed;">-</span></div>
+                        </div>
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th data-tr="thDesc">وصف الخدمة / البند</th>
+                                    <th style="text-align: center; width: 50px;" data-tr="thNights">الليالي</th>
+                                    <th style="text-align: center; width: 50px;" data-tr="thRooms">الغرف</th>
+                                    <th class="th-rate" style="width: 90px;" data-tr="thRate">سعر الليلة</th>
+                                    <th class="th-total" style="width: 90px;" data-tr="thTotal">الإجمالي</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><strong data-tr="hotelAccTitle">إقامة فندقية</strong><br><span style="font-size: 8px; color: #555; direction: ltr; display: inline-block;" id="outHotelSubLine">-</span></td>
+                                    <td style="text-align: center;" id="outNightsCount">1</td>
+                                    <td style="text-align: center;" id="outRoomQtyVal">1</td>
+                                    <td class="td-rate" id="outRoomRateVal" style="direction: ltr;">€ 0.00</td>
+                                    <td class="td-total" id="outHotelTableTotal" style="direction: ltr;">€ 0.00</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- معاينة الرحلات -->
+                    <div id="viewTrip" style="display: none;">
+                        <div class="sec-title"><i class="fa-solid fa-umbrella-beach"></i> <span data-tr="outTripSecTitle">تفاصيل البرنامج السياحي</span></div>
+                        <div class="details-grid">
+                            <div class="grid-item" style="grid-column: span 2;"><i class="fa-solid fa-map-location-dot"></i> <strong><span data-tr="outPackageLbl">الخدمة الإضافية:</span></strong> <span id="outTripName" style="direction: ltr; unicode-bidi: embed;">-</span></div>
+                            <div class="grid-item"><i class="fa-solid fa-calendar-day"></i> <strong><span data-tr="outStartLbl">البند:</span></strong> <span id="outTripStartDate">-</span></div>
+                            <div class="grid-item"><i class="fa-solid fa-clock"></i> <strong><span data-tr="outDurationLbl">الوصف:</span></strong> <span id="outTripDuration">-</span></div>
+                            <div class="grid-item"><i class="fa-solid fa-diamond-turn-right"></i> <strong><span data-tr="outDirectionLbl">الاتجاه:</span></strong> <span id="outTripDirection">-</span></div>
+                            <div class="grid-item"><i class="fa-solid fa-calendar-day"></i> <strong><span data-tr="outFromDateLbl">تاريخ البداية:</span></strong> <span id="outTripFromDate" style="direction: ltr; unicode-bidi: embed; display: inline-block;">-</span></div>
+                            <div class="grid-item"><i class="fa-solid fa-calendar-check"></i> <strong><span data-tr="outToDateLbl">تاريخ النهاية:</span></strong> <span id="outTripToDate" style="direction: ltr; unicode-bidi: embed; display: inline-block;">-</span></div>
+                        </div>
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th data-tr="thDesc">وصف الخدمة / البند</th>
+                                    <th style="text-align: center; width: 60px;" data-tr="thPersons">العدد</th>
+                                    <th class="th-rate" style="width: 100px;" data-tr="thRatePerson">السعر</th>
+                                    <th class="th-total" style="width: 100px;" data-tr="thTotal">الإجمالي</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><strong id="outTripItemTitle">-</strong><br><span style="font-size: 8px; color: #555; direction: ltr; display: inline-block;" id="outTripSubLine">-</span></td>
+                                    <td style="text-align: center;" id="outTripPaxCount">1</td>
+                                    <td class="td-rate" id="outTripPaxRate" style="direction: ltr;">€ 0.00</td>
+                                    <td class="td-total" id="outTripTableTotal" style="direction: ltr;">€ 0.00</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- معاينة الطيران -->
+                    <div id="viewFlight" style="display: none;">
+                        <div class="sec-title"><i class="fa-solid fa-plane"></i> <span data-tr="outFlightSecTitle">تفاصيل تذكرة الطيران</span></div>
+                        <div class="details-grid">
+                            <div class="grid-item"><i class="fa-solid fa-plane-departure"></i> <strong><span data-tr="outAirlineLbl">خط الطيران:</span></strong> <span id="outAirline" style="direction: ltr; unicode-bidi: embed;">-</span></div>
+                            <div class="grid-item"><i class="fa-solid fa-ticket"></i> <strong><span data-tr="outPnrLbl">رمز الحجز:</span></strong> <span id="outPnr" style="direction: ltr; unicode-bidi: embed;">-</span></div>
+                            <div class="grid-item" style="grid-column: span 2;"><i class="fa-solid fa-plane-departure"></i> <strong><span data-tr="outFromLbl">من:</span></strong> <span id="outDepAirport" style="direction: ltr; unicode-bidi: embed;">-</span></div>
+                            <div class="grid-item"><i class="fa-solid fa-calendar-day"></i> <strong><span data-tr="outDepDateLbl">تاريخ الإقلاع:</span></strong> <span id="outDepDate" style="direction: ltr; unicode-bidi: embed; display: inline-block;">-</span></div>
+                            <div class="grid-item"><i class="fa-solid fa-clock"></i> <strong><span data-tr="outDepTimeLbl">ساعة الإقلاع:</span></strong> <span id="outDepTime" style="direction: ltr; unicode-bidi: embed; display: inline-block;">-</span></div>
+                            <div class="grid-item" style="grid-column: span 2;"><i class="fa-solid fa-plane-arrival"></i> <strong><span data-tr="outToLbl">إلى:</span></strong> <span id="outArrAirport" style="direction: ltr; unicode-bidi: embed;">-</span></div>
+                            <div class="grid-item"><i class="fa-solid fa-calendar-day"></i> <strong><span data-tr="outArrDateLbl">تاريخ الوصول:</span></strong> <span id="outArrDate" style="direction: ltr; unicode-bidi: embed; display: inline-block;">-</span></div>
+                            <div class="grid-item"><i class="fa-solid fa-clock"></i> <strong><span data-tr="outArrTimeLbl">ساعة الوصول:</span></strong> <span id="outArrTime" style="direction: ltr; unicode-bidi: embed; display: inline-block;">-</span></div>
+                            <div class="grid-item" style="grid-column: span 2;"><i class="fa-solid fa-chair"></i> <strong><span data-tr="outClassLbl">الدرجة:</span></strong> <span id="outFlightClass" style="direction: ltr; unicode-bidi: embed;">Economy Class</span></div>
+                        </div>
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th data-tr="thDesc">وصف الخدمة / البند</th>
+                                    <th style="text-align: center; width: 90px;" data-tr="thPaxDetails">تفاصيل المسافرين</th>
+                                    <th class="th-rate" style="width: 90px;" data-tr="thUnitPrice">سعر الوحدة</th>
+                                    <th class="th-total" style="width: 90px;" data-tr="thTotal">الإجمالي</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><strong data-tr="airTicketTitle">قيمة تذاكر الطيران</strong><br><span style="font-size: 8px; color: #555; direction: ltr; display: inline-block;" id="outFlightSubLine">-</span></td>
+                                    <td style="text-align: center; direction: ltr;" id="outPaxDetails">1 Adult</td>
+                                    <td class="td-rate" id="outTicketUnitPrice" style="direction: ltr;">€ 0.00</td>
+                                    <td class="td-total" id="outFlightTableTotal" style="direction: ltr;">€ 0.00</td>
+                                </tr>
+                                <tr id="rowFlightServiceFee">
+                                    <td colspan="3"><strong data-tr="serviceFeeTitle">الرسوم الإضافية والضرائب</strong></td>
+                                    <td class="td-total" id="outFlightServiceFeeVal" style="direction: ltr;">€ 0.00</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Price Summary Box -->
+                    <div class="price-summary-box">
+                        <div class="price-row"><span data-tr="subtotalLbl" style="unicode-bidi: isolate; display: inline-block;">المجموع الفرعي:</span><span id="outSubtotal" style="direction: ltr; unicode-bidi: isolate; display: inline-block;">€ 0.00</span></div>
+                        <div class="price-row" id="rowDiscount" style="color: #d9232a;"><span data-tr="discountLbl" style="unicode-bidi: isolate; display: inline-block;">الخصم:</span><span id="outDiscount" style="direction: ltr; unicode-bidi: isolate; display: inline-block;">- € 0.00 (0%)</span></div>
+                        <div class="price-row final"><span data-tr="totalAmountLbl" style="unicode-bidi: isolate; display: inline-block;">المبلغ الإجمالي المستحق:</span><span id="outFinalTotal" style="direction: ltr; unicode-bidi: isolate; display: inline-block;">€ 0.00</span></div>
+                    </div>
+
+                    <!-- طريقة الدفع -->
+                    <div class="bank-details-box" id="outPaymentBox">
+                        <i class="fa-solid fa-credit-card" style="color: #00205b; font-size: 13px;"></i>
+                        <div id="outPaymentText" style="flex: 1; line-height: 1.2;"></div>
+                    </div>
+
+                    <!-- الشروط والملاحظات -->
+                    <div class="box-info-two">
+                        <div class="box-info-item">
+                            <strong style="color: #00205b;"><i class="fa-solid fa-file-contract"></i> <span data-tr="termsTitle">الشروط والأحكام:</span></strong>
+                            <div class="custom-payment-text" id="outCustomPaymentText"></div>
+                        </div>
+                        <div class="box-info-item">
+                            <strong style="color: #d9232a;"><i class="fa-solid fa-circle-info"></i> <span data-tr="notesTitle">ملاحظات هامة:</span></strong>
+                            <div class="custom-payment-text" id="outCustomNotesText"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ================= الفوتر السفلي ================= -->
+            <div class="footer-image-container">
+                <img src="footer-banner.jpeg" class="footer-img-exact" alt="Concord Travel Footer Banner">
+            </div>
+
+        </div>
+    </div>
+
+    <!-- الـ JavaScript الأصلي مضافاً إليه تفعيل الخدمة -->
+    <script>
+        // تفعيل الـ Service Worker للتشغيل دون انترنت وتثبيت التطبيق
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js').then(() => {
+                console.log('PWA Service Worker Registered Successfully.');
+            });
+        }
+
+        let currentTab = 'hotel';
+        let currentLang = 'ar';
+
+        const translations = {
+            ar: {
+                uiTitle: "التحكم بالنظام",
+                hotelsTab: "الفنادق",
+                tripsTab: "الرحلات",
+                flightsTab: "الطيران",
+                hotelDataTitle: "بيانات الفندق والعميل",
+                docDateLbl: "تاريخ العرض",
+                currLbl: "العملة",
+                docNoLbl: "رقم العرض",
+                hotelNameLbl: "اسم الفندق",
+                hotelAddressLbl: "عنوان الفندق (المحافظة / المدينة)",
+                clientLbl: "اسم العميل / الشركة",
+                roomDataTitle: "الإقامة والغرف",
+                checkInLbl: "تاريخ الوصول",
+                checkOutLbl: "تاريخ المغادرة",
+                roomTypeLbl: "نوع الغرفة",
+                boardTypeLbl: "نوع الوجبات",
+                roomsQtyLbl: "عدد الغرف",
+                roomPriceLbl: "سعر الغرفة",
+                discLbl: "نسبة الخصم (%)",
+                tripDataTitle: "بيانات الرحلة والعميل",
+                tripNameLbl: "الخدمة الإضافية",
+                tripProgTitle: "تفاصيل الخدمة",
+                darkModeLbl: "داكن",
+                lightModeLbl: "فاتح",
+                tripStartLbl: "البند",
+                durationLbl: "وصف البند",
+                tripDirectionLbl: "الاتجاه",
+                tripFromDateLbl: "تاريخ البداية",
+                tripToDateLbl: "تاريخ النهاية",
+                paxCountLbl: "العدد",
+                paxPriceLbl: "السعر",
+                flightDataTitle: "بيانات تذكرة الطيران",
+                invDateLbl: "تاريخ الفاتورة",
+                invNoLbl: "رقم الفاتورة",
+                airlineLbl: "خط الطيران",
+                flightRouteTitle: "تفاصيل الإقلاع والوصول",
+                depDetailsLbl: "تفاصيل الإقلاع 🛫",
+                depDateLbl: "تاريخ الإقلاع",
+                depTimeLbl: "ساعة الإقلاع",
+                arrDetailsLbl: "تفاصيل الوصول 🛬",
+                arrDateLbl: "تاريخ الوصول",
+                arrTimeLbl: "ساعة الوصول",
+                classLbl: "درجة التذكرة",
+                pnrLbl: "رمز الحجز (PNR)",
+                paxPricingTitle: "المسافرين والأسعار",
+                adultsLbl: "بالغين",
+                childrenLbl: "أطفال",
+                infantsLbl: "رُضّع",
+                ticketPriceLbl: "سعر التذكرة",
+                serviceFeeLbl: "رسوم إضافية",
+                paymentCondTitle: "طريقة وشروط الدفع",
+                payMethodLbl: "طريقة الدفع",
+                ibanLbl: "رقم الحساب / IBAN",
+                instaLbl: "معرف إنستا باي",
+                vodaLbl: "رقم فودافون كاش",
+                termsLbl: "الشروط والأحكام",
+                notesLbl: "ملاحظات إضافية",
+                downloadBtn: "تحميل الملف PDF 📄",
+                outInvNoLbl: "رقم الفاتورة:",
+                outInvDateLbl: "التاريخ:",
+                outCurrLbl: "العملة:",
+                outPreparedLbl: "مجهز إلى / العميل:",
+                outHotelSecTitle: "تفاصيل حجز الفندق",
+                outHotelLbl: "الفندق:",
+                outHotelAddressLbl: "العنوان:",
+                outCheckInLbl: "تاريخ الوصول:",
+                outCheckOutLbl: "تاريخ المغادرة:",
+                outRoomTypeLbl: "نوع الغرفة:",
+                outBoardLbl: "الوجبات:",
+                thDesc: "وصف الخدمة / البند",
+                thNights: "الليالي",
+                thRooms: "الغرف",
+                thRate: "سعر الليلة",
+                thTotal: "الإجمالي",
+                hotelAccTitle: "إقامة فندقية",
+                outTripSecTitle: "تفاصيل البرنامج السياحي",
+                outPackageLbl: "الخدمة الإضافية:",
+                outStartLbl: "البند:",
+                outDurationLbl: "الوصف:",
+                outDirectionLbl: "الاتجاه:",
+                outFromDateLbl: "تاريخ البداية:",
+                outToDateLbl: "تاريخ النهاية:",
+                thPersons: "العدد",
+                thRatePerson: "السعر",
+                tourPkgRateTitle: "سعر البرنامج السياحي",
+                outFlightSecTitle: "تفاصيل تذكرة الطيران",
+                outAirlineLbl: "خط الطيران:",
+                outPnrLbl: "رمز الحجز:",
+                outFromLbl: "من:",
+                outDepDateLbl: "تاريخ الإقلاع:",
+                outDepTimeLbl: "ساعة الإقلاع:",
+                outToLbl: "إلى:",
+                outArrDateLbl: "تاريخ الوصول:",
+                outArrTimeLbl: "ساعة الوصول:",
+                outClassLbl: "الدرجة:",
+                thPaxDetails: "تفاصيل المسافرين",
+                thUnitPrice: "سعر الوحدة",
+                airTicketTitle: "قيمة تذاكر الطيران",
+                serviceFeeTitle: "الرسوم الإضافية والضرائب",
+                subtotalLbl: "المجموع الفرعي:",
+                discountLbl: "الخصم:",
+                totalAmountLbl: "المبلغ الإجمالي المستحق:",
+                termsTitle: "الشروط والأحكام:",
+                notesTitle: "ملاحظات هامة:"
+            },
+            en: {
+                uiTitle: "Control Panel",
+                hotelsTab: "Hotels",
+                tripsTab: "Trips",
+                flightsTab: "Flights",
+                hotelDataTitle: "Hotel & Client Details",
+                docDateLbl: "Quotation Date",
+                currLbl: "Currency",
+                docNoLbl: "Quotation No.",
+                hotelNameLbl: "Hotel Name",
+                hotelAddressLbl: "Hotel Address (Governorate / City)",
+                clientLbl: "Client / Company Name",
+                roomDataTitle: "Accommodation & Rooms",
+                checkInLbl: "Check-in Date",
+                checkOutLbl: "Check-out Date",
+                roomTypeLbl: "Room Type",
+                boardTypeLbl: "Board Type",
+                roomsQtyLbl: "Number of Rooms",
+                roomPriceLbl: "Rate per Night",
+                discLbl: "Discount (%)",
+                tripDataTitle: "Trip & Client Details",
+                tripNameLbl: "Additional Service",
+                tripProgTitle: "Item Details",
+                darkModeLbl: "Dark",
+                lightModeLbl: "Light",
+                tripStartLbl: "Item",
+                durationLbl: "Item Description",
+                tripDirectionLbl: "Direction",
+                tripFromDateLbl: "Start Date",
+                tripToDateLbl: "End Date",
+                paxCountLbl: "Quantity",
+                paxPriceLbl: "Price",
+                flightDataTitle: "Flight Ticket Details",
+                invDateLbl: "Invoice Date",
+                invNoLbl: "Invoice No.",
+                airlineLbl: "Airline",
+                flightRouteTitle: "Departure & Arrival Details",
+                depDetailsLbl: "Departure Details 🛫",
+                depDateLbl: "Departure Date",
+                depTimeLbl: "Departure Time",
+                arrDetailsLbl: "Arrival Details 🛬",
+                arrDateLbl: "Arrival Date",
+                arrTimeLbl: "Arrival Time",
+                classLbl: "Ticket Class",
+                pnrLbl: "PNR Reference",
+                paxPricingTitle: "Passengers & Pricing",
+                adultsLbl: "Adults",
+                childrenLbl: "Children",
+                infantsLbl: "Infants",
+                ticketPriceLbl: "Unit Price",
+                serviceFeeLbl: "Additional Fees",
+                paymentCondTitle: "Payment Terms & Methods",
+                payMethodLbl: "Payment Method",
+                ibanLbl: "Account No. / IBAN",
+                instaLbl: "InstaPay Address",
+                vodaLbl: "Vodafone Cash No.",
+                termsLbl: "Terms & Conditions",
+                notesLbl: "Additional Notes",
+                downloadBtn: "Download PDF 📄",
+                outInvNoLbl: "Invoice No.:",
+                outInvDateLbl: "Date:",
+                outCurrLbl: "Currency:",
+                outPreparedLbl: "PREPARED FOR / BILL TO:",
+                outHotelSecTitle: "HOTEL BOOKING DETAILS",
+                outHotelLbl: "Hotel:",
+                outHotelAddressLbl: "Address:",
+                outCheckInLbl: "Check-In:",
+                outCheckOutLbl: "Check-Out:",
+                outRoomTypeLbl: "Room Type:",
+                outBoardLbl: "Board:",
+                thDesc: "ITEM DESCRIPTION",
+                thNights: "NIGHTS",
+                thRooms: "ROOMS",
+                thRate: "RATE / NIGHT",
+                thTOTAL: "TOTAL",
+                hotelAccTitle: "Hotel Accommodation",
+                outTripSecTitle: "TOUR PACKAGE DETAILS",
+                outPackageLbl: "Additional Service:",
+                outStartLbl: "Item:",
+                outDurationLbl: "Description:",
+                outDirectionLbl: "Direction:",
+                outFromDateLbl: "Start Date:",
+                outToDateLbl: "End Date:",
+                thPersons: "QTY",
+                thRatePerson: "PRICE",
+                tourPkgRateTitle: "Tour Package Rate",
+                outFlightSecTitle: "FLIGHT DETAILS",
+                outAirlineLbl: "Airline:",
+                outPnrLbl: "PNR:",
+                outFromLbl: "From:",
+                outDepDateLbl: "Dep Date:",
+                outDepTimeLbl: "Dep Time:",
+                outToLbl: "To:",
+                outArrDateLbl: "Arr Date:",
+                outArrTimeLbl: "Arr Time:",
+                outClassLbl: "Class:",
+                thPaxDetails: "PAX DETAILS",
+                thUnitPrice: "UNIT PRICE",
+                airTicketTitle: "Air Tickets Fare",
+                serviceFeeTitle: "Service & Taxes / Handling Fees",
+                subtotalLbl: "Subtotal:",
+                discountLbl: "Discount:",
+                totalAmountLbl: "TOTAL AMOUNT:",
+                termsTitle: "Terms & Conditions:",
+                notesTitle: "Important Notes:"
+            }
+        };
+
+        function generateAutoNumber(prefix) {
+            const randomNum = Math.floor(1000 + Math.random() * 9000);
+            const dateStr = new Date().toISOString().slice(2, 10).replace(/-/g, '');
+            return `${prefix}-${dateStr}-${randomNum}`;
+        }
+
+        document.addEventListener("DOMContentLoaded", function() {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('inHotelDocDate').value = today;
+            document.getElementById('inTripDocDate').value = today;
+            document.getElementById('inFlightDocDate').value = today;
+
+            document.getElementById('inHotelDocNo').value = generateAutoNumber('QT');
+            document.getElementById('inTripDocNo').value = generateAutoNumber('TR');
+            document.getElementById('inFlightDocNo').value = generateAutoNumber('INV');
+
+            setLanguage('ar');
+        });
+
+        function onClientNameChange(type) {
+            if (type === 'hotel') {
+                document.getElementById('inHotelDocNo').value = generateAutoNumber('QT');
+            } else if (type === 'trip') {
+                document.getElementById('inTripDocNo').value = generateAutoNumber('TR');
+            } else if (type === 'flight') {
+                document.getElementById('inFlightDocNo').value = generateAutoNumber('INV');
+            }
+            calculateAndRender();
+        }
+
+        function switchTab(tab) {
+            currentTab = tab;
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            
+            document.getElementById('formHotelFields').style.display = 'none';
+            document.getElementById('formTripFields').style.display = 'none';
+            document.getElementById('formFlightFields').style.display = 'none';
+            document.getElementById('commonCustomBox').style.display = 'block';
+
+            document.getElementById('viewHotel').style.display = 'none';
+            document.getElementById('viewTrip').style.display = 'none';
+            document.getElementById('viewFlight').style.display = 'none';
+
+            if (tab === 'hotel') {
+                document.getElementById('tabHotelBtn').classList.add('active');
+                document.getElementById('formHotelFields').style.display = 'block';
+                document.getElementById('viewHotel').style.display = 'block';
+            } else if (tab === 'trip') {
+                document.getElementById('tabTripBtn').classList.add('active');
+                document.getElementById('formTripFields').style.display = 'block';
+                document.getElementById('viewTrip').style.display = 'block';
+            } else if (tab === 'flight') {
+                document.getElementById('tabFlightBtn').classList.add('active');
+                document.getElementById('formFlightFields').style.display = 'block';
+                document.getElementById('viewFlight').style.display = 'block';
+            }
+            calculateAndRender();
+        }
+
+        function formatDate(dateStr) {
+            if(!dateStr) return '-';
+            const d = new Date(dateStr);
+            if(isNaN(d.getTime())) return dateStr;
+            const monthsAr = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
+            const monthsEn = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+            const months = currentLang === 'ar' ? monthsAr : monthsEn;
+            return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+        }
+
+        function calculateAndRender() {
+            let currency = "EUR";
+            let symbol = "€";
+            let subtotal = 0;
+            let discountValue = 0;
+            let discountPercent = 0;
+
+            const bankAcc = document.getElementById('inBankAccountNo').value.trim();
+            const instaPayVal = document.getElementById('inInstaPayHandle').value.trim();
+            const vodafoneVal = document.getElementById('inVodafoneCashNo').value.trim();
+            const payMethod = document.getElementById('inPaymentMethod').value;
+            const payText = document.getElementById('outPaymentText');
+
+            if (currentLang === 'ar') {
+                switch (payMethod) {
+                    case 'bank': payText.innerHTML = `<strong>طريقة الدفع: تحويل بنكي</strong><br>` + (bankAcc ? `رقم الحساب / الآيبان: <span style="direction:ltr; unicode-bidi:embed; display:inline-block;"><strong>${bankAcc}</strong></span>` : ``); break;
+                    case 'instapay': payText.innerHTML = `<strong>طريقة الدفع: إنستا باي</strong><br>` + (instaPayVal ? `عنوان إنستا باي (IPA): <span style="direction:ltr; unicode-bidi:embed; display:inline-block;"><strong>${instaPayVal}</strong></span>` : ``); break;
+                    case 'vodafone': payText.innerHTML = `<strong>طريقة الدفع: فودافون كاش</strong><br>` + (vodafoneVal ? `محفظة فودافون كاش: <span style="direction:ltr; unicode-bidi:embed; display:inline-block;"><strong>${vodafoneVal}</strong></span>` : ``); break;
+                    case 'card': payText.innerHTML = `<strong>طريقة الدفع: بطاقة إئتمان / فيزا</strong><br>` + (bankAcc ? `المرجع / البطاقة: <span style="direction:ltr; unicode-bidi:embed; display:inline-block;"><strong>${bankAcc}</strong></span>` : ``); break;
+                    case 'cash': payText.innerHTML = `<strong>طريقة الدفع: نقداً</strong><br>الدفع نقداً بالمكتب الرئيسي.`; break;
+                }
+            } else {
+                switch (payMethod) {
+                    case 'bank': payText.innerHTML = `<strong>Payment Method: Bank Transfer</strong><br>` + (bankAcc ? `Account / IBAN: <strong>${bankAcc}</strong>` : ``); break;
+                    case 'instapay': payText.innerHTML = `<strong>Payment Method: InstaPay</strong><br>` + (instaPayVal ? `InstaPay Address (IPA): <strong>${instaPayVal}</strong>` : ``); break;
+                    case 'vodafone': payText.innerHTML = `<strong>Payment Method: Vodafone Cash</strong><br>` + (vodafoneVal ? `Vodafone Cash Wallet: <strong>${vodafoneVal}</strong>` : ``); break;
+                    case 'card': payText.innerHTML = `<strong>Payment Method: Credit / Debit Card</strong><br>` + (bankAcc ? `Card / Ref: <strong>${bankAcc}</strong>` : ``); break;
+                    case 'cash': payText.innerHTML = `<strong>Payment Method: Cash</strong><br>Direct cash payment at office.`; break;
+                }
+            }
+
+            document.getElementById('outCustomPaymentText').innerText = document.getElementById('inCustomPayment').value;
+            document.getElementById('outCustomNotesText').innerText = document.getElementById('inCustomNotes').value;
+
+            const isRtl = document.body.classList.contains('rtl');
+            const alignSide = isRtl ? 'left' : 'right';
+            document.querySelectorAll('.td-rate, .td-total, .th-rate, .th-total').forEach(el => {
+                el.style.textAlign = alignSide;
+            });
+
+            if (currentTab === 'hotel') {
+                currency = document.getElementById('inHotelCurrency').value;
+                symbol = getSymbol(currency);
+                
+                document.getElementById('outDocNo').innerText = document.getElementById('inHotelDocNo').value || '-';
+                document.getElementById('outDocDate').innerText = formatDate(document.getElementById('inHotelDocDate').value);
+                document.getElementById('outBillTo').innerText = document.getElementById('inHotelBillTo').value || '-';
+                document.getElementById('outHotelName').innerText = document.getElementById('inHotelName').value || '-';
+                document.getElementById('outHotelAddress').innerText = document.getElementById('inHotelAddress').value || '-';
+                
+                const cIn = document.getElementById('inCheckIn').value;
+                const cOut = document.getElementById('inCheckOut').value;
+                document.getElementById('outCheckIn').innerText = formatDate(cIn);
+                document.getElementById('outCheckOut').innerText = formatDate(cOut);
+                
+                document.getElementById('outRoomType').innerText = document.getElementById('inRoomType').value || '-';
+                document.getElementById('outBoardType').innerText = document.getElementById('inBoardType').value || '-';
+
+                let nights = 1;
+                if(cIn && cOut) {
+                    const diffTime = Math.abs(new Date(cOut) - new Date(cIn));
+                    nights = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) || 1;
+                }
+                document.getElementById('outNightsCount').innerText = nights;
+
+                const qty = parseFloat(document.getElementById('inRoomQty').value) || 1;
+                const price = parseFloat(document.getElementById('inRoomPrice').value) || 0;
+                discountPercent = parseFloat(document.getElementById('inHotelDiscount').value) || 0;
+
+                subtotal = nights * qty * price;
+                discountValue = (subtotal * discountPercent) / 100;
+
+                const hName = document.getElementById('inHotelName').value;
+                const rType = document.getElementById('inRoomType').value;
+                document.getElementById('outHotelSubLine').innerText = (hName || rType) ? `${hName} - ${rType}` : '-';
+                document.getElementById('outRoomQtyVal').innerText = qty;
+                document.getElementById('outRoomRateVal').innerText = `${symbol} ${price.toFixed(2)}`;
+                document.getElementById('outHotelTableTotal').innerText = `${symbol} ${subtotal.toFixed(2)}`;
+
+            } else if (currentTab === 'trip') {
+                currency = document.getElementById('inTripCurrency').value;
+                symbol = getSymbol(currency);
+
+                document.getElementById('outDocNo').innerText = document.getElementById('inTripDocNo').value || '-';
+                document.getElementById('outDocDate').innerText = formatDate(document.getElementById('inTripDocDate').value);
+                document.getElementById('outBillTo').innerText = document.getElementById('inTripBillTo').value || '-';
+                
+                document.getElementById('outTripName').innerText = document.getElementById('inTripName').value || '-';
+                document.getElementById('outTripItemTitle').innerText = document.getElementById('inTripStartDate').value || '-';
+                document.getElementById('outTripStartDate').innerText = document.getElementById('inTripStartDate').value || '-';
+                document.getElementById('outTripDuration').innerText = document.getElementById('inTripDuration').value || '-';
+                document.getElementById('outTripDirection').innerText = document.getElementById('inTripDirection').value || '-';
+                document.getElementById('outTripFromDate').innerText = formatDate(document.getElementById('inTripFromDate').value);
+                document.getElementById('outTripToDate').innerText = formatDate(document.getElementById('inTripToDate').value);
+
+                const pax = parseFloat(document.getElementById('inTripPax').value) || 1;
+                const paxPrice = parseFloat(document.getElementById('inTripPaxPrice').value) || 0;
+                discountPercent = parseFloat(document.getElementById('inTripDiscount').value) || 0;
+
+                subtotal = pax * paxPrice;
+                discountValue = (subtotal * discountPercent) / 100;
+
+                document.getElementById('outTripSubLine').innerText = document.getElementById('inTripName').value || '-';
+                document.getElementById('outTripPaxCount').innerText = pax;
+                document.getElementById('outTripPaxRate').innerText = `${symbol} ${paxPrice.toFixed(2)}`;
+                document.getElementById('outTripTableTotal').innerText = `${symbol} ${subtotal.toFixed(2)}`;
+
+            } else if (currentTab === 'flight') {
+                currency = document.getElementById('inFlightCurrency').value;
+                symbol = getSymbol(currency);
+
+                document.getElementById('outDocNo').innerText = document.getElementById('inFlightDocNo').value || '-';
+                document.getElementById('outDocDate').innerText = formatDate(document.getElementById('inFlightDocDate').value);
+                document.getElementById('outBillTo').innerText = document.getElementById('inFlightBillTo').value || '-';
+
+                document.getElementById('outAirline').innerText = document.getElementById('inAirline').value || '-';
+                document.getElementById('outPnr').innerText = document.getElementById('inPnr').value || '-';
+                document.getElementById('outDepAirport').innerText = document.getElementById('inDepAirport').value || '-';
+                document.getElementById('outDepDate').innerText = formatDate(document.getElementById('inDepDate').value);
+                document.getElementById('outDepTime').innerText = document.getElementById('inDepTime').value || '-';
+                
+                document.getElementById('outArrAirport').innerText = document.getElementById('inArrAirport').value || '-';
+                document.getElementById('outArrDate').innerText = formatDate(document.getElementById('inArrDate').value);
+                document.getElementById('outArrTime').innerText = document.getElementById('inArrTime').value || '-';
+                document.getElementById('outFlightClass').innerText = document.getElementById('inFlightClass').value;
+
+                const adults = parseInt(document.getElementById('inAdults').value) || 0;
+                const children = parseInt(document.getElementById('inChildren').value) || 0;
+                const infants = parseInt(document.getElementById('inInfants').value) || 0;
+                const totalPax = adults + children + infants;
+
+                let paxDetailsArr = [];
+                if (currentLang === 'ar') {
+                    if(adults > 0) paxDetailsArr.push(`${adults} بالغ`);
+                    if(children > 0) paxDetailsArr.push(`${children} طفل`);
+                    if(infants > 0) paxDetailsArr.push(`${infants} رضيع`);
+                } else {
+                    if(adults > 0) paxDetailsArr.push(`${adults} Adult${adults > 1 ? 's' : ''}`);
+                    if(children > 0) paxDetailsArr.push(`${children} Child${children > 1 ? 'ren' : ''}`);
+                    if(infants > 0) paxDetailsArr.push(`${infants} Infant${infants > 1 ? 's' : ''}`);
+                }
+                document.getElementById('outPaxDetails').innerText = paxDetailsArr.join(', ') || '0 Pax';
+
+                const unitPrice = parseFloat(document.getElementById('inTicketUnitPrice').value) || 0;
+                const serviceFee = parseFloat(document.getElementById('inFlightServiceFee').value) || 0;
+                discountPercent = parseFloat(document.getElementById('inFlightDiscount').value) || 0;
+
+                const ticketsTotal = totalPax * unitPrice;
+                subtotal = ticketsTotal + serviceFee;
+                discountValue = (subtotal * discountPercent) / 100;
+
+                const airlineVal = document.getElementById('inAirline').value;
+                const depAp = document.getElementById('inDepAirport').value;
+                const arrAp = document.getElementById('inArrAirport').value;
+                document.getElementById('outFlightSubLine').innerText = (airlineVal || depAp || arrAp) ? `${airlineVal} - ${depAp} to ${arrAp}` : '-';
+                
+                document.getElementById('outTicketUnitPrice').innerText = `${symbol} ${unitPrice.toFixed(2)}`;
+                document.getElementById('outFlightTableTotal').innerText = `${symbol} ${ticketsTotal.toFixed(2)}`;
+                document.getElementById('outFlightServiceFeeVal').innerText = `${symbol} ${serviceFee.toFixed(2)}`;
+            }
+
+            document.getElementById('outCurrLabel').innerText = `${getCurrencyName(currency)} (${currency})`;
+            document.getElementById('outSubtotal').innerText = `${symbol} ${subtotal.toFixed(2)}`;
+            document.getElementById('outDiscount').innerText = `- ${symbol} ${discountValue.toFixed(2)} (${discountPercent}%)`;
+            
+            const finalTotal = Math.max(0, subtotal - discountValue);
+            document.getElementById('outFinalTotal').innerText = `${symbol} ${finalTotal.toFixed(2)}`;
+        }
+
+        function getSymbol(curr) {
+            switch(curr) {
+                case 'EUR': return '€';
+                case 'USD': return '$';
+                case 'EGP': return 'ج.م';
+                case 'SAR': return 'ر.س';
+                default: return '€';
+            }
+        }
+
+        function getCurrencyName(curr) {
+            if (currentLang === 'ar') {
+                switch(curr) {
+                    case 'EUR': return 'يورو';
+                    case 'USD': return 'دولار أمريكي';
+                    case 'EGP': return 'جنيه مصري';
+                    case 'SAR': return 'ريال سعودي';
+                    default: return 'يورو';
+                }
+            } else {
+                switch(curr) {
+                    case 'EUR': return 'EURO';
+                    case 'USD': return 'US DOLLAR';
+                    case 'EGP': return 'EGYPTIAN POUND';
+                    case 'SAR': return 'SAUDI RIYAL';
+                    default: return 'EURO';
+                }
+            }
+        }
+
+        function updateDarkModeToggle() {
+            const isDark = document.body.classList.contains('dark-mode');
+            const icon = document.getElementById('darkModeIcon');
+            const label = document.getElementById('darkModeLabel');
+            const t = translations[currentLang];
+            if (isDark) {
+                icon.className = 'fa-solid fa-sun';
+                label.innerText = t.lightModeLbl;
+            } else {
+                icon.className = 'fa-solid fa-moon';
+                label.innerText = t.darkModeLbl;
+            }
+        }
+
+        function toggleDarkMode() {
+            document.body.classList.toggle('dark-mode');
+            updateDarkModeToggle();
+        }
+
+        function setLanguage(lang) {
+            currentLang = lang;
+            const t = translations[lang];
+
+            if (lang === 'ar') {
+                document.body.className = 'rtl' + (document.body.classList.contains('dark-mode') ? ' dark-mode' : '');
+            } else {
+                document.body.className = 'ltr' + (document.body.classList.contains('dark-mode') ? ' dark-mode' : '');
+            }
+
+            document.querySelectorAll('[data-tr]').forEach(el => {
+                const key = el.getAttribute('data-tr');
+                if (t[key]) {
+                    el.innerHTML = t[key];
+                }
+            });
+
+            updateDarkModeToggle();
+            calculateAndRender();
+        }
+
+        function downloadPDF() {
+            document.title = (document.getElementById('outDocNo').innerText || 'Document');
+            if (document.fonts && document.fonts.ready) {
+                document.fonts.ready.then(() => {
+                    window.print();
+                });
+            } else {
+                window.print();
+            }
+        }
+    </script>
+</body>
+</html>
