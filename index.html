@@ -14,8 +14,7 @@
 
     <!-- مكتبات الأيقونات والـ PDF والخطوط -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Montserrat:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 
     <style>
@@ -236,6 +235,7 @@
                 <div class="form-group"><label data-tr="docNoLbl">رقم العرض</label><input type="text" id="inHotelDocNo" oninput="calculateAndRender()"></div>
                 <div class="form-group"><label data-tr="hotelNameLbl">اسم الفندق</label><input type="text" id="inHotelName" placeholder="" oninput="calculateAndRender()"></div>
             </div>
+            <!-- حقل عنوان الفندق / المحافظة -->
             <div class="form-group">
                 <label data-tr="hotelAddressLbl">عنوان الفندق (المحافظة / المدينة)</label>
                 <input type="text" id="inHotelAddress" placeholder="" oninput="calculateAndRender()">
@@ -478,6 +478,7 @@
                         <div class="sec-title"><i class="fa-solid fa-hotel"></i> <span data-tr="outHotelSecTitle">تفاصيل حجز الفندق</span></div>
                         <div class="details-grid">
                             <div class="grid-item" style="grid-column: span 2;"><i class="fa-solid fa-building"></i> <strong><span data-tr="outHotelLbl">الفندق:</span></strong> <span id="outHotelName" style="direction: ltr; unicode-bidi: embed;">-</span></div>
+                            <!-- عرض عنوان الفندق في المعاينة -->
                             <div class="grid-item" style="grid-column: span 2;"><i class="fa-solid fa-location-dot"></i> <strong><span data-tr="outHotelAddressLbl">العنوان (المحافظة):</span></strong> <span id="outHotelAddress" style="direction: ltr; unicode-bidi: embed;">-</span></div>
                             <div class="grid-item"><i class="fa-solid fa-calendar-check"></i> <strong><span data-tr="outCheckInLbl">تاريخ الوصول:</span></strong> <span id="outCheckIn" style="direction: ltr; unicode-bidi: embed; display: inline-block;">-</span></div>
                             <div class="grid-item"><i class="fa-solid fa-calendar-xmark"></i> <strong><span data-tr="outCheckOutLbl">تاريخ المغادرة:</span></strong> <span id="outCheckOut" style="direction: ltr; unicode-bidi: embed; display: inline-block;">-</span></div>
@@ -631,8 +632,9 @@
         </div>
     </div>
 
-    <!-- الـ JavaScript -->
+    <!-- الـ JavaScript الأصلي مضافاً إليه تفعيل الخدمة -->
     <script>
+        // تفعيل الـ Service Worker للتشغيل دون انترنت وتثبيت التطبيق
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('sw.js').then(() => {
                 console.log('PWA Service Worker Registered Successfully.');
@@ -1264,6 +1266,7 @@
                     return;
                 }
                 
+                // التقاط المحتوى كصورة وتحويله لـ PDF بدقة وارتفاع ديناميكي مطابق تماماً لحجم محتوى الفاتورة
                 html2canvas(element, {
                     scale: SCALE,
                     useCORS: true,
@@ -1272,41 +1275,12 @@
                     scrollX: 0,
                     scrollY: 0
                 }).then((canvas) => {
-                    const ctx = canvas.getContext('2d');
-                    const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                    let data = imgData.data;
-                    let lastY = canvas.height;
-
-                    for (let y = canvas.height - 1; y >= 0; y--) {
-                        let rowHasContent = false;
-                        for (let x = 0; x < canvas.width; x++) {
-                            let idx = (y * canvas.width + x) * 4;
-                            if (data[idx] < 250 || data[idx+1] < 250 || data[idx+2] < 250) {
-                                rowHasContent = true;
-                                break;
-                            }
-                        }
-                        if (rowHasContent) {
-                            lastY = y + 15;
-                            break;
-                        }
-                    }
-
-                    const trimmedCanvas = document.createElement('canvas');
-                    trimmedCanvas.width = canvas.width;
-                    trimmedCanvas.height = Math.min(lastY, canvas.height);
-                    const trimmedCtx = trimmedCanvas.getContext('2d');
-                    trimmedCtx.fillStyle = '#ffffff';
-                    trimmedCtx.fillRect(0, 0, trimmedCanvas.width, trimmedCanvas.height);
-                    trimmedCtx.drawImage(canvas, 0, 0);
-
                     const pxToMM = (px) => px * 25.4 / 96;
-                    const widthMM = pxToMM(trimmedCanvas.width / SCALE);
-                    const heightMM = pxToMM(trimmedCanvas.height / SCALE);
-
+                    const widthMM = pxToMM(canvas.width / SCALE);
+                    const heightMM = pxToMM(canvas.height / SCALE);
                     const pdf = new jsPDFCtor({ unit: 'mm', format: [widthMM, heightMM], orientation: 'portrait' });
-                    const finalImgData = trimmedCanvas.toDataURL('image/jpeg', 0.98);
-                    pdf.addImage(finalImgData, 'JPEG', 0, 0, widthMM, heightMM);
+                    const imgData = canvas.toDataURL('image/jpeg', 0.98);
+                    pdf.addImage(imgData, 'JPEG', 0, 0, widthMM, heightMM);
                     pdf.save(docNo + '.pdf');
                     restoreBtn();
                 }).catch((err) => {
@@ -1325,3 +1299,4 @@
     </script>
 </body>
 </html>
+```[cite: 6]
