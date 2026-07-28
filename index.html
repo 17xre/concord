@@ -2,7 +2,7 @@
 <html lang="ar">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Concord Travel - All Services Quotation System</title>
     
     <link rel="manifest" href="manifest.json">
@@ -1294,7 +1294,7 @@
         }
 
         // ================================================================
-        // دالة تحميل PDF - قص تلقائي للمسافات البيضاء وحفظ مباشر
+        // دالة تحميل PDF - صفحة واحدة متكيفة مع المحتوى
         // ================================================================
         function downloadPDF() {
             const element = document.getElementById('pdf-container');
@@ -1307,9 +1307,8 @@
                 btn.innerHTML = (currentLang === 'ar') ? 'جاري التحميل... ⏳' : 'Downloading... ⏳';
             }
 
-            // حفظ النمط الأصلي مؤقتاً
-            const originalStyle = element.style.cssText;
             // إزالة جميع الهوامش والظل قبل التصوير
+            const originalStyle = element.style.cssText;
             element.style.padding = '0';
             element.style.margin = '0';
             element.style.border = 'none';
@@ -1339,9 +1338,9 @@
                 let bottomNonWhite = canvas.height;
                 let leftNonWhite = 0;
                 let rightNonWhite = canvas.width;
-                const threshold = 245;
+                const threshold = 240;
 
-                // من الأعلى
+                // البحث من الأعلى
                 for (let y = 0; y < canvas.height; y++) {
                     let hasColor = false;
                     for (let x = 0; x < canvas.width; x++) {
@@ -1355,7 +1354,7 @@
                     if (hasColor) { topNonWhite = y; break; }
                 }
 
-                // من الأسفل
+                // البحث من الأسفل
                 for (let y = canvas.height - 1; y >= 0; y--) {
                     let hasColor = false;
                     for (let x = 0; x < canvas.width; x++) {
@@ -1369,7 +1368,7 @@
                     if (hasColor) { bottomNonWhite = y + 1; break; }
                 }
 
-                // من اليسار
+                // البحث من اليسار
                 for (let x = 0; x < canvas.width; x++) {
                     let hasColor = false;
                     for (let y = 0; y < canvas.height; y++) {
@@ -1383,7 +1382,7 @@
                     if (hasColor) { leftNonWhite = x; break; }
                 }
 
-                // من اليمين
+                // البحث من اليمين
                 for (let x = canvas.width - 1; x >= 0; x--) {
                     let hasColor = false;
                     for (let y = 0; y < canvas.height; y++) {
@@ -1398,8 +1397,8 @@
                 }
 
                 // التأكد من وجود محتوى
-                const cropW = Math.max(rightNonWhite - leftNonWhite, 10);
-                const cropH = Math.max(bottomNonWhite - topNonWhite, 10);
+                const cropW = Math.max(rightNonWhite - leftNonWhite, 50);
+                const cropH = Math.max(bottomNonWhite - topNonWhite, 50);
 
                 // إنشاء كانفاس جديد مقصوص
                 const croppedCanvas = document.createElement('canvas');
@@ -1408,23 +1407,26 @@
                 const croppedCtx = croppedCanvas.getContext('2d');
                 croppedCtx.drawImage(canvas, leftNonWhite, topNonWhite, cropW, cropH, 0, 0, cropW, cropH);
 
-                // حساب أبعاد PDF
+                // حساب حجم الصفحة بحيث يتكيف مع المحتوى
                 const imgWidth = croppedCanvas.width;
                 const imgHeight = croppedCanvas.height;
-                const pxToMM = (px) => px * 25.4 / 96;
-                const widthMM = pxToMM(imgWidth / 2);
-                const heightMM = pxToMM(imgHeight / 2);
+
+                // عرض ثابت (حوالي عرض A4) والارتفاع يتكيف تلقائياً
+                const TARGET_WIDTH = 595; // عرض A4 بالنقاط
+                const scaleFactor = TARGET_WIDTH / imgWidth;
+                const pdfWidth = TARGET_WIDTH;
+                const pdfHeight = imgHeight * scaleFactor;
 
                 const { jsPDF } = window.jspdf;
                 const pdf = new jsPDF({
-                    unit: 'mm',
-                    format: [widthMM, heightMM],
-                    orientation: heightMM > widthMM ? 'portrait' : 'landscape',
+                    unit: 'pt',
+                    format: [pdfWidth, pdfHeight],
+                    orientation: pdfHeight > pdfWidth ? 'portrait' : 'landscape',
                     compress: true
                 });
 
                 const imgData = croppedCanvas.toDataURL('image/jpeg', 0.95);
-                pdf.addImage(imgData, 'JPEG', 0, 0, widthMM, heightMM);
+                pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
                 pdf.save(docNo + '.pdf');
 
                 if (btn) {
@@ -1434,7 +1436,6 @@
             }).catch((err) => {
                 console.error('PDF generation failed:', err);
                 element.style.cssText = originalStyle;
-                // في حالة الفشل، استخدم الطباعة كحل بديل
                 window.print();
                 if (btn) {
                     btn.disabled = false;
