@@ -14,7 +14,8 @@
 
     <!-- مكتبات الأيقونات والـ PDF والخطوط -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Montserrat:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 
     <style>
@@ -632,7 +633,7 @@
         </div>
     </div>
 
-    <!-- الـ JavaScript الأصلي مضافاً إليه تفعيل الخدمة -->
+    <!-- الـ JavaScript -->
     <script>
         // تفعيل الـ Service Worker للتشغيل دون انترنت وتثبيت التطبيق
         if ('serviceWorker' in navigator) {
@@ -1247,10 +1248,6 @@
         }
 
         function downloadPDF() {
-            // نولّد الملف من نفس العنصر المعروض فعليًا على الشاشة (html2canvas + jsPDF)
-            // بدل الاعتماد على طباعة المتصفح (window.print) اللي بتفشل في تطبيق
-            // CSS Grid و RTL/LTR isolation صح على بعض الأجهزة، وده اللي كان بيسبب
-            // ظهور بيانات الفورم مختلطة مع بيانات المعاينة بشكل غير منظم في الملف.
             const element = document.getElementById('pdf-container');
             const docNo = (document.getElementById('outDocNo').innerText || 'Document').trim().replace(/[\\/:*?"<>|]/g, '-');
             const btn = document.querySelector('.btn-submit');
@@ -1265,14 +1262,11 @@
                 if (btn) { btn.disabled = true; btn.innerHTML = (currentLang === 'ar') ? 'جاري تجهيز الملف... ⏳' : 'Preparing file... ⏳'; }
                 const jsPDFCtor = window.jsPDF || (window.jspdf && window.jspdf.jsPDF);
                 if (typeof html2canvas === 'undefined' || !jsPDFCtor) {
-                    // fallback في حالة فشل تحميل المكتبات (مثلاً بدون إنترنت)
                     restoreBtn();
                     window.print();
                     return;
                 }
-                // خطوة واحدة متسلسلة: نلتقط المحتوى صورة، وبعدين نبني صفحة PDF
-                // بارتفاع يساوي ارتفاع المحتوى الفعلي بالظبط (مش A4 ثابت) عشان
-                // منسيبش مساحة بيضة فاضية تحت الفاتورة لو المحتوى أقصر من صفحة كاملة.
+                
                 html2canvas(element, {
                     scale: SCALE,
                     useCORS: true,
@@ -1283,7 +1277,8 @@
                 }).then((canvas) => {
                     const pxToMM = (px) => px * 25.4 / 96;
                     const widthMM = pxToMM(canvas.width / SCALE);
-                    const heightMM = pxToMM(canvas.height / SCALE);
+                    const heightMM = pxToMM(canvas.height / SCALE); // تحديد الارتفاع بدقة بناءً على حجم المحتوى الفعلي لمنع أي فراغ أبيض
+
                     const pdf = new jsPDFCtor({ unit: 'mm', format: [widthMM, heightMM], orientation: 'portrait' });
                     const imgData = canvas.toDataURL('image/jpeg', 0.98);
                     pdf.addImage(imgData, 'JPEG', 0, 0, widthMM, heightMM);
