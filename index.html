@@ -143,6 +143,34 @@
         body.rtl .fa-plane-departure, body.rtl .fa-plane-arrival, body.rtl .fa-plane { transform: scaleX(-1); display: inline-block; }
         .grid-item i { color: #00205b; width: 16px; text-align: center; }
 
+        /* تنسيق وصف البند في المعاينة */
+        .trip-description-list {
+            margin: 2px 0;
+            padding-right: 18px;
+            padding-left: 0;
+            list-style-type: disc;
+            font-size: 10px;
+            line-height: 1.5;
+        }
+        .trip-description-list li {
+            margin-bottom: 2px;
+        }
+
+        .description-text {
+            direction: ltr;
+            text-align: left;
+            font-size: 10px;
+            line-height: 1.6;
+        }
+        .description-text .title-line {
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+        .description-text .item-line {
+            padding-right: 12px;
+            margin-bottom: 1px;
+        }
+
         @media print {
             @page { size: A4 portrait; margin: 6mm; }
             * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
@@ -171,7 +199,10 @@
 
         .box-info-two { display: flex; gap: 8px; margin-top: 6px; font-size: 9px; }
         .box-info-item { flex: 1; border: 1px solid #ccc; border-radius: 5px; padding: 5px 8px; background: #fdfdfd; }
-        .custom-payment-text { white-space: pre-line; line-height: 1.2; color: #333; font-size: 9px; margin-top: 2px; }
+        .custom-payment-text { white-space: pre-line; line-height: 1.4; color: #333; font-size: 9px; margin-top: 2px; }
+        .custom-payment-text .term-line {
+            margin-bottom: 2px;
+        }
         body.rtl .custom-payment-text { direction: ltr; text-align: left; }
         body.ltr .custom-payment-text { direction: ltr; text-align: left; }
 
@@ -345,7 +376,7 @@
 
             <div class="section-header-form"><i class="fa-solid fa-clock"></i> <span data-tr="tripProgTitle">التوقيت والبرنامج</span></div>
             <div class="form-group"><label data-tr="tripStartLbl">البند</label><input type="text" id="inTripStartDate" placeholder="" oninput="calculateAndRender()"></div>
-            <div class="form-group"><label data-tr="durationLbl">وصف البند</label><textarea id="inTripDuration" rows="3" placeholder="" oninput="calculateAndRender()"></textarea></div>
+            <div class="form-group"><label data-tr="durationLbl">وصف البند</label><textarea id="inTripDuration" rows="4" placeholder="أدخل وصف البند (استخدم Enter للفصل بين السطور)" oninput="calculateAndRender()"></textarea></div>
             <div class="form-group"><label data-tr="tripDirectionLbl">الاتجاه</label><input type="text" id="inTripDirection" placeholder="" oninput="calculateAndRender()"></div>
             <div class="form-row">
                 <div class="form-group"><label data-tr="tripFromDateLbl">تاريخ البداية</label><input type="date" id="inTripFromDate" onchange="calculateAndRender()"></div>
@@ -488,13 +519,15 @@
             </div>
             <div class="form-group">
                 <label data-tr="termsLbl">الشروط والأحكام</label>
-                <textarea id="inCustomPayment" rows="3" oninput="calculateAndRender()">.Full payment is required 48 hours prior to confirmation •
-.Non-refundable after final booking issuance •</textarea>
+                <textarea id="inCustomPayment" rows="3" oninput="calculateAndRender()">.Full payment is required 48 hours prior to confirmation
+.Non-refundable after final booking issuance
+.Please verify all passport details before issuing
+.Offer valid for 48 hours from quotation date</textarea>
             </div>
             <div class="form-group">
                 <label data-tr="notesLbl">ملاحظات إضافية</label>
-                <textarea id="inCustomNotes" rows="3" oninput="calculateAndRender()">.Please verify all passport details before issuing •
-.Offer valid for 48 hours from quotation date •</textarea>
+                <textarea id="inCustomNotes" rows="3" oninput="calculateAndRender()">.Please verify all passport details before issuing
+.Offer valid for 48 hours from quotation date</textarea>
             </div>
         </div>
 
@@ -566,7 +599,12 @@
                         <div class="details-grid">
                             <div class="grid-item" style="grid-column: span 2;"><i class="fa-solid fa-map-location-dot"></i> <strong><span data-tr="outPackageLbl">الخدمة الإضافية:</span></strong> <span id="outTripName" style="direction: ltr; unicode-bidi: embed;">-</span></div>
                             <div class="grid-item"><i class="fa-solid fa-calendar-day"></i> <strong><span data-tr="outStartLbl">البند:</span></strong> <span id="outTripStartDate">-</span></div>
-                            <div class="grid-item"><i class="fa-solid fa-clock"></i> <strong><span data-tr="outDurationLbl">الوصف:</span></strong> <span id="outTripDuration">-</span></div>
+                            <!-- وصف البند - يظهر كما كتبه العميل -->
+                            <div class="grid-item" style="grid-column: span 2; align-items: flex-start;">
+                                <i class="fa-solid fa-clock" style="margin-top: 3px;"></i> 
+                                <strong><span data-tr="outDurationLbl">الوصف:</span></strong> 
+                                <div id="outTripDuration" style="flex: 1; min-width: 0;">-</div>
+                            </div>
                             <div class="grid-item"><i class="fa-solid fa-diamond-turn-right"></i> <strong><span data-tr="outDirectionLbl">الاتجاه:</span></strong> <span id="outTripDirection">-</span></div>
                             <div class="grid-item"><i class="fa-solid fa-calendar-day"></i> <strong><span data-tr="outFromDateLbl">تاريخ البداية:</span></strong> <span id="outTripFromDate" style="direction: ltr; unicode-bidi: embed; display: inline-block;">-</span></div>
                             <div class="grid-item"><i class="fa-solid fa-calendar-check"></i> <strong><span data-tr="outToDateLbl">تاريخ النهاية:</span></strong> <span id="outTripToDate" style="direction: ltr; unicode-bidi: embed; display: inline-block;">-</span></div>
@@ -1017,6 +1055,156 @@
             return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
         }
 
+        // ================================================================
+        // عرض وصف البند كما كتبه العميل مع الحفاظ على التنسيق والترتيب
+        // ================================================================
+        function formatTripDescription(text) {
+            if (!text || text.trim() === '') return '-';
+            
+            text = text.trim();
+            
+            // إذا كان النص يحتوي على فواصل أسطر (Enter)
+            if (text.includes('\n')) {
+                let lines = text.split('\n').map(item => item.trim()).filter(item => item.length > 0);
+                if (lines.length > 1) {
+                    let html = '<div class="description-text">';
+                    lines.forEach((line, index) => {
+                        if (index === 0 && (line.includes(':') || line.includes('—') || line.includes('-'))) {
+                            html += `<div class="title-line">${line}</div>`;
+                        } else {
+                            html += `<div class="item-line">• ${line}</div>`;
+                        }
+                    });
+                    html += '</div>';
+                    return html;
+                }
+            }
+            
+            // إذا كان النص يحتوي على فواصل
+            if (text.includes(',')) {
+                let parts = text.split(',').map(item => item.trim()).filter(item => item.length > 0);
+                if (parts.length > 1) {
+                    let html = '<div class="description-text">';
+                    parts.forEach((part, index) => {
+                        if (index === 0 && (part.includes(':') || part.includes('—') || part.includes('-'))) {
+                            html += `<div class="title-line">${part}</div>`;
+                        } else {
+                            html += `<div class="item-line">• ${part}</div>`;
+                        }
+                    });
+                    html += '</div>';
+                    return html;
+                }
+            }
+            
+            // إذا كان النص يحتوي على نقاط
+            if (text.includes('. ') && text.split('. ').length > 2) {
+                let parts = text.split('. ').map(item => item.trim()).filter(item => item.length > 0);
+                if (parts.length > 1) {
+                    let html = '<div class="description-text">';
+                    parts.forEach((part, index) => {
+                        if (index === parts.length - 1 && !part.endsWith('.')) {
+                            part += '.';
+                        } else if (!part.endsWith('.')) {
+                            part += '.';
+                        }
+                        if (index === 0 && (part.includes(':') || part.includes('—') || part.includes('-'))) {
+                            html += `<div class="title-line">${part}</div>`;
+                        } else {
+                            html += `<div class="item-line">• ${part}</div>`;
+                        }
+                    });
+                    html += '</div>';
+                    return html;
+                }
+            }
+            
+            // إذا كان النص يحتوي على علامات bullet
+            if (text.includes('•')) {
+                let parts = text.split('•').map(item => item.trim()).filter(item => item.length > 0);
+                if (parts.length > 1) {
+                    let html = '<div class="description-text">';
+                    parts.forEach((part, index) => {
+                        if (index === 0 && (part.includes(':') || part.includes('—') || part.includes('-'))) {
+                            html += `<div class="title-line">${part}</div>`;
+                        } else {
+                            html += `<div class="item-line">• ${part}</div>`;
+                        }
+                    });
+                    html += '</div>';
+                    return html;
+                }
+            }
+            
+            // إذا كان هناك سطر واحد فقط، اعرضه كما هو
+            return text;
+        }
+
+        // ================================================================
+        // عرض الشروط والأحكام بشكل منظم
+        // ================================================================
+        function formatTerms(text) {
+            if (!text || text.trim() === '') return '-';
+            
+            text = text.trim();
+            
+            // إذا كان النص يحتوي على فواصل أسطر
+            if (text.includes('\n')) {
+                let lines = text.split('\n').map(item => item.trim()).filter(item => item.length > 0);
+                if (lines.length > 1) {
+                    let html = '';
+                    lines.forEach(line => {
+                        // إزالة النقطة أو الرمز الزائد من البداية
+                        let cleanLine = line.replace(/^[•.\-]\s*/, '');
+                        html += `<div class="term-line">• ${cleanLine}</div>`;
+                    });
+                    return html;
+                }
+            }
+            
+            // إذا كان النص يحتوي على نقاط
+            if (text.includes('. ') || text.includes('.\n')) {
+                let parts = text.split(/\.\s*/).map(item => item.trim()).filter(item => item.length > 0);
+                if (parts.length > 1) {
+                    let html = '';
+                    parts.forEach(part => {
+                        let cleanPart = part.replace(/^[•.\-]\s*/, '');
+                        if (!cleanPart.endsWith('.')) cleanPart += '.';
+                        html += `<div class="term-line">• ${cleanPart}</div>`;
+                    });
+                    return html;
+                }
+            }
+            
+            // إذا كان النص يحتوي على علامات bullet
+            if (text.includes('•')) {
+                let parts = text.split('•').map(item => item.trim()).filter(item => item.length > 0);
+                if (parts.length > 1) {
+                    let html = '';
+                    parts.forEach(part => {
+                        let cleanPart = part.replace(/^[•.\-]\s*/, '');
+                        html += `<div class="term-line">• ${cleanPart}</div>`;
+                    });
+                    return html;
+                }
+            }
+            
+            // إذا كان النص يحتوي على فواصل
+            if (text.includes(',')) {
+                let parts = text.split(',').map(item => item.trim()).filter(item => item.length > 0);
+                if (parts.length > 1) {
+                    let html = '';
+                    parts.forEach(part => {
+                        let cleanPart = part.replace(/^[•.\-]\s*/, '');
+                        html += `<div class="term-line">• ${cleanPart}</div>`;
+                    });
+                    return html;
+                }
+            }
+            
+            return text;
+        }
+
         function calculateAndRender() {
             let currency = "EUR";
             let symbol = "€";
@@ -1048,7 +1236,10 @@
                 }
             }
 
-            document.getElementById('outCustomPaymentText').innerText = document.getElementById('inCustomPayment').value;
+            // ===== عرض الشروط والأحكام بشكل منظم =====
+            const termsText = document.getElementById('inCustomPayment').value || '';
+            document.getElementById('outCustomPaymentText').innerHTML = formatTerms(termsText);
+            
             document.getElementById('outCustomNotesText').innerText = document.getElementById('inCustomNotes').value;
 
             const isRtl = document.body.classList.contains('rtl');
@@ -1104,7 +1295,11 @@
                 document.getElementById('outTripName').innerText = document.getElementById('inTripName').value || '-';
                 document.getElementById('outTripItemTitle').innerText = document.getElementById('inTripStartDate').value || '-';
                 document.getElementById('outTripStartDate').innerText = document.getElementById('inTripStartDate').value || '-';
-                document.getElementById('outTripDuration').innerText = document.getElementById('inTripDuration').value || '-';
+                
+                // ===== عرض وصف البند كما كتبه العميل =====
+                const tripDurationText = document.getElementById('inTripDuration').value || '-';
+                document.getElementById('outTripDuration').innerHTML = formatTripDescription(tripDurationText);
+                
                 document.getElementById('outTripDirection').innerText = document.getElementById('inTripDirection').value || '-';
                 document.getElementById('outTripFromDate').innerText = formatDate(document.getElementById('inTripFromDate').value);
                 document.getElementById('outTripToDate').innerText = formatDate(document.getElementById('inTripToDate').value);
